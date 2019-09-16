@@ -1,0 +1,245 @@
+---
+title: "3. Linear Regression"
+output: html_notebook
+---
+
+# Introduction
+
+These are notes based on 'Introduction to Statistical Learning' chapter 3.
+
+# Notes
+
+## Single Linear Regression Questions
+
+Assuming 2 variables X & Y, these are questions that should be asked:
+
+1. is there a relationship between X & Y?
+2. how strong is the relationship between X & Y?
+3. which elements x in X contribute to Y?
+4. how accurately can we estimate the effect of each x in X on Y?
+5. how accurately can we predict future Y?
+6. is the relationship linear?
+7. is there synergy among the x in X?
+
+
+## Multiple Linear Regression Questions
+
+1. Is at least 1 predictor $X_n$ useful in predicting the response?
+2. Do all the predictors help to explain $Y$, or is only a subset of the predictors useful?
+3. How well does the model fit the data?
+4. Given a set of predictor values, what response value should we predict & how accurate is our prediction?
+
+
+## Potential Problems Fitting Linear Regression Models
+
+1. Non-linearity of the response-predictor relationships
+2. Correlation of error terms
+3. Non-constant variance of error terms
+4. Outliers
+5. High-leverage points
+6. Collinearity
+
+
+# Lab
+
+```{r setup.environment}
+
+library(car)
+library(dplyr)
+library(ggplot2)
+library(ISLR)
+library(MASS)
+library(tibble)
+
+```
+
+## Simple Linear Regression
+
+```{r boston.simple.linear.regression}
+
+boston_lm_fit <- lm(medv ~ lstat, data = Boston)
+boston_lm_fit
+
+```
+
+```{r boston.lm.summary}
+
+summary(boston_lm_fit)
+
+```
+
+```{r boston.confint}
+
+confint(boston_lm_fit)
+
+```
+
+```{r boston.predict.confidence}
+
+predict(
+  boston_lm_fit,
+  data.frame(lstat = c(5, 10, 15)),
+  interval = 'confidence'
+)
+
+```
+
+```{r boston.predict.prediction}
+
+predict(
+  boston_lm_fit,
+  data.frame(lstat = c(5, 10, 15)),
+  interval = 'prediction'
+)
+
+```
+
+```{r plot.boston.lm}
+
+boston_lm_fit %>%
+  ggplot(aes(x = lstat, y = medv)) +
+  geom_point() +
+  geom_abline(
+    intercept = boston_lm_fit$coefficients[1],
+    slope = boston_lm_fit$coefficients[2],
+    color = "blue"
+  )
+
+```
+
+```{r boston.plot.residuals}
+
+ggplot(
+  boston_lm_fit,
+  aes(x = predict(boston_lm_fit), y = residuals(boston_lm_fit))
+  ) +
+  geom_point()
+
+```
+
+```{r boston.plot.rstudent}
+
+ggplot(
+  boston_lm_fit,
+  aes(x = predict(boston_lm_fit), y = rstudent(boston_lm_fit))
+  ) +
+  geom_point()
+
+```
+
+```{r boston.hat.values}
+
+boston_lm_fit %>%
+  hatvalues() %>%
+  tibble() %>%
+  rowid_to_column("index") %>%
+  ggplot(aes(x = index, y = .)) +
+  geom_point()
+
+```
+
+
+## Multiple Linear Regression
+
+```{r boston.multiple.linear.regression.example}
+
+boston_mult_lm_fit_ex <- lm(medv ~ lstat + age, data = Boston)
+summary(boston_mult_lm_fit_ex)
+
+```
+
+```{r boston.multiple.linear.regression}
+
+boston_mult_lm_fit <- lm(medv ~ ., data = Boston)
+summary(boston_mult_lm_fit)
+
+```
+
+```{r boston.multiple.lm.r2}
+
+summary(boston_mult_lm_fit)$r.sq
+
+```
+
+```{r boston.multiple.lm.sigma}
+
+summary(boston_mult_lm_fit)$sigma
+
+```
+
+
+```{r boston.variance.inflation.factors}
+
+boston_mult_lm_fit %>% vif()
+
+```
+
+
+## Interaction Terms
+
+```{r boston.interaction.terms}
+
+summary(lm(medv ~ lstat * age, data = Boston))
+
+```
+
+## Non-Linear Transformations of the Predictors
+
+```{r boston.nonlinear.transforms}
+
+boston_lm_non_linear <- (lm(medv ~ lstat + I(lstat^2), data = Boston))
+summary(boston_lm_non_linear)
+
+```
+
+```{r}
+
+anova(
+  lm(medv ~ lstat, data = Boston),
+  boston_lm_non_linear
+)
+
+```
+
+```{r boston.nonlinear.plot.residuals}
+
+ggplot(
+  boston_lm_non_linear,
+  aes(
+    x = predict(boston_lm_non_linear),
+    y = residuals(boston_lm_non_linear)
+    )
+  ) +
+  geom_point()
+
+```
+
+```{r boston.poly.lm}
+
+boston_lm_poly <- lm(medv ~ poly(lstat, 5), data = Boston)
+summary(boston_lm_poly)
+
+```
+
+```{r boston.log.lm}
+
+boston_lm_log <- lm(medv ~ log(rm), data = Boston)
+summary(boston_lm_log)
+
+```
+
+## Qualitative Predictors
+
+```{r carseats.qual}
+
+carseats_lm_fit <-
+  lm(Sales ~ . + Income:Advertising + Price:Age, data = Carseats)
+summary(carseats_lm_fit)
+
+```
+
+```{r carseats.contrasts}
+
+contrasts(Carseats$ShelveLoc)
+
+```
